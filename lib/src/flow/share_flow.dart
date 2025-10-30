@@ -190,6 +190,11 @@ class MutableSharedFlow<T> extends MutableFlow<T> {
   Future<void> dispose() async {
     if (_controller.isClosed) return;
     await _controller.close();
+
+    /// Clear memory
+    _replayCache.clear();
+    _queue.clear();
+
     subscriptionCount.value = 0;
     _controller.onListen = null;
     super.dispose();
