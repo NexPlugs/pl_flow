@@ -61,6 +61,8 @@ class MutableSharedFlow<T> extends MutableFlow<T> {
   /// When start listening, subscribers will receive the replay cache items in order.
   @override
   Stream<T> get stream async* {
+    debugLog("Listner add. count: ${subscriptionCount.value}");
+
     // Create an individual controller per subscriber that forwards events from broadcast controller
     final controller = StreamController<T>();
 
@@ -82,9 +84,7 @@ class MutableSharedFlow<T> extends MutableFlow<T> {
 
     // Cleanup when controller is canceled
     controller.onCancel = () async {
-      await sub.cancel();
-      subscriptionCount.value = max(0, subscriptionCount.value - 1);
-      await controller.close();
+      await _onCancelController(sub);
     };
 
     yield* controller.stream;
@@ -93,6 +93,9 @@ class MutableSharedFlow<T> extends MutableFlow<T> {
   /// Try emit without dropping (returns true if accepted; false if dropped due to full buffer)
   @override
   bool tryEmit(T value) {
+    ///Check if the value is already in the replay cache
+    // if (_replayCache.isNotEmpty && _replayCache.last == value) return true;
+
     ///[capacity] this value used for check the queue buffer is full or not
     final capacity = replay + extraBufferCapacity;
 
@@ -131,6 +134,8 @@ class MutableSharedFlow<T> extends MutableFlow<T> {
   /// Emit (async). In this lightweight implementation this completes immediately.
   @override
   Future<void> emit(T value) async {
+    debugLog("emit: $value");
+
     if (tryEmit(value)) return;
     // if not accepted due to buffer overflow + dropLatest, we simply return (dropped)
     return;
@@ -183,7 +188,19 @@ class MutableSharedFlow<T> extends MutableFlow<T> {
   /// Dispose controller when no longer needed
   @override
   Future<void> dispose() async {
+    if (_controller.isClosed) return;
     await _controller.close();
+    subscriptionCount.value = 0;
+    _controller.onListen = null;
     super.dispose();
+  }
+
+  /// [_onCancelController] this function used for cancel the controller and update the subscription count
+  Future<void> _onCancelController(StreamSubscription<T> subscription) async {
+    await subscription.cancel();
+    subscriptionCount.value = max(0, subscriptionCount.value - 1);
+    if (subscriptionCount.value == 0) {
+      await dispose();
+    }
   }
 }
