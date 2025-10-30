@@ -3,7 +3,6 @@ description:  Lightweight, Flutter-friendly reactive flows for state and event s
 version: 1.0.0
 homepage: https://github.com/NexPlugs/pl_flow
 repository: https://github.com/NexPlugs/pl_flow
-author: NexPlugs
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

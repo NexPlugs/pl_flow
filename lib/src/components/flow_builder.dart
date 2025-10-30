@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../state/flow.dart';
+import '../flow/flow.dart';
 
 /// Factory function to create a new flow instance.
 typedef CreateFlow<T> = MutableFlow<T> Function(BuildContext context);
@@ -27,16 +27,16 @@ class FlowBuilder<T> extends StatefulWidget {
     required CreateFlow<T> create,
     required this.builder,
     this.listener,
-  }) : _flow = null,
-       _create = create;
+  })  : _flow = null,
+        _create = create;
 
   const FlowBuilder.value({
     super.key,
     required MutableFlow<T> flow,
     required this.builder,
     this.listener,
-  }) : _flow = flow,
-       _create = null;
+  })  : _flow = flow,
+        _create = null;
 
   /// The flow to use.
   final MutableFlow<T>? _flow;
