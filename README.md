@@ -1,18 +1,251 @@
-# pl_flow
+# pl_flow ⚡️
 
-A new Flutter plugin project.
+Lightweight, Flutter-friendly reactive flows for state and event streams.
 
-## Getting Started
+- **StateFlow<T>**: holds a current value and emits updates to listeners
+- **SharedFlow<T>**: multicast/event stream with replay and buffer control
+- **FlowBuilder**: tiny widget to build UI from a `MutableFlow`
+- **PulseStreamBuilder**: ergonomic, typed alternative to `StreamBuilder`
+- **FlowObserver**: track and dispose flows to avoid leaks
 
-This project is a starting point for a Flutter
-[plug-in package](https://flutter.dev/to/develop-plugins),
-a specialized package that includes platform-specific implementation code for
-Android and/or iOS.
+## Installation 📦
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Add to your `pubspec.yaml`:
 
-The plugin project was generated without specifying the `--platforms` flag, no platforms are currently supported.
-To add platforms, run `flutter create -t plugin --platforms <platforms> .` in this directory.
-You can also find a detailed instruction on how to add platforms in the `pubspec.yaml` at https://flutter.dev/to/pubspec-plugin-platforms.
+```yaml
+dependencies:
+  pl_flow: ^1.0.0
+```
+
+Then run:
+
+```bash
+flutter pub get
+```
+
+Import where needed:
+
+```dart
+import 'package:pl_flow/pl_flow.dart';
+```
+
+## Core Concepts 🧠
+
+### MutableFlow<T> 🔧
+Base interface for flows.
+- `stream` → `Stream<T>` to listen
+- `emit(T value)` / `tryEmit(T value)` to push values
+- `dispose()` to clean up
+- `debugLabel` and `enableLogging` for optional debug output
+
+### StateFlow<T> 🟢
+A flow that always has a current value.
+
+```dart
+final counter = StateFlow<int>(0);
+
+counter.stream.listen((value) {
+  // receives current value immediately, then updates
+});
+
+counter.value = 1;      // synchronous set + emits
+await counter.emit(2);  // emits if different from current
+```
+
+- New subscribers receive the latest `value` first.
+- Setter `value = newValue` and `emit(newValue)` both update and notify.
+
+### SharedFlow<T> 🔁
+A multicast/event stream with optional replay and buffering.
+
+```dart
+final events = SharedFlow<String>(
+  replay: 1,                 // last N items re-emitted to new subscribers
+  extraBufferCapacity: 16,   // queue capacity beyond replay
+  onBufferOverflow: BufferOverflow.dropOldest, // or dropLatest
+);
+
+// Emit events
+await events.emit('opened');
+
+// Listen (will get the most recent replayed item if configured)
+final sub = events.stream.listen((e) => print(e));
+```
+
+#### Replay behavior example 🔁
+
+```dart
+final feed = SharedFlow<String>(replay: 2);
+
+// Emit before anyone is listening
+await feed.emit('A');
+await feed.emit('B');
+await feed.emit('C');
+
+// New subscriber joins now → receives the last 2 events immediately: B, C
+final sub1 = feed.stream.listen((e) => print('sub1: $e'));
+// Console:
+// sub1: B
+// sub1: C
+
+// Emit more → active subscribers continue to receive new events
+await feed.emit('D');
+// Console:
+// sub1: D
+
+// Another subscriber joins later → still replays last 2: C, D
+final sub2 = feed.stream.listen((e) => print('sub2: $e'));
+// Console:
+// sub2: C
+// sub2: D
+
+await sub1.cancel();
+await sub2.cancel();
+```
+
+Helpers:
+- `tryEmit(value)` returns `false` if dropped due to `dropLatest` when full
+- `resetReplayCache()` clears replay history
+
+## Widgets 🧩
+
+### FlowBuilder 🏗️
+Minimal widget to build from a `MutableFlow<T>`.
+
+Create and own a flow:
+```dart
+FlowBuilder<int>(
+  create: (context) => StateFlow<int>(0),
+  builder: (context, value) => Text('Count: $value'),
+)
+```
+
+Use an existing flow instance:
+```dart
+FlowBuilder.value<int>(
+  flow: counter,
+  builder: (context, value) => Text('Count: $value'),
+)
+```
+
+Optional listener (side effects):
+```dart
+FlowBuilder.value<int>(
+  flow: counter,
+  listener: (value) {
+    // e.g., show a snackbar when count changes
+  },
+  builder: (context, value) => Text('Count: $value'),
+)
+```
+
+### PulseStreamBuilder 📡
+Typed, ergonomic builder for any `Stream<T>`.
+
+```dart
+PulseStreamBuilder<int>(
+  stream: counter.stream,
+  initialValue: 0,
+  loadingBuilder: (_) => const CircularProgressIndicator(),
+  errorBuilder: (_, error, stack) => Text('Error: $error'),
+  shouldRebuild: (prev, curr) => prev != curr,
+  onData: (value) { /* side-effect */ },
+  builder: (context, value) => Text('Count: $value'),
+)
+```
+
+## Lifecycle and Memory Safety ♻️
+
+### FlowObserver 👀
+Track flows and dispose them later (e.g., in a `StatefulWidget`).
+
+```dart
+final observer = FlowObserver();
+
+@override
+void initState() {
+  super.initState();
+  observer.track(counter);
+  observer.track(events);
+}
+
+@override
+void dispose() {
+  observer.disposeAll();
+  super.dispose();
+}
+```
+
+Flows created by `FlowBuilder(create: ...)` are automatically disposed when the widget unmounts.
+
+## End-to-End Examples 🚀
+
+### Counter with StateFlow 🔢
+```dart
+class CounterPage extends StatefulWidget {
+  const CounterPage({super.key});
+  @override
+  State<CounterPage> createState() => _CounterPageState();
+}
+
+class _CounterPageState extends State<CounterPage> {
+  final counter = StateFlow<int>(0);
+
+  @override
+  void dispose() {
+    counter.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('StateFlow Counter')),
+      body: Center(
+        child: FlowBuilder.value<int>(
+          flow: counter,
+          builder: (context, value) => Text('Count: $value'),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => counter.value = counter.value + 1,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+}
+```
+
+### Event bus with SharedFlow 📣
+```dart
+final bus = SharedFlow<String>(replay: 0);
+
+// send
+Future<void> notifyLogin() => bus.emit('login');
+
+// receive in a widget
+class ActivityBanner extends StatelessWidget {
+  const ActivityBanner({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return PulseStreamBuilder<String>(
+      stream: bus.stream,
+      loadingBuilder: (_) => const SizedBox.shrink(),
+      builder: (_, event) => Text('Event: $event'),
+    );
+  }
+}
+```
+
+## Tips and Notes
+- Use `enableLogging: true` and `debugLabel` in flows to aid debugging.
+- Always call `dispose()` on flows you own (or use `FlowObserver`).
+- Prefer `StateFlow` for state you want to read synchronously and observe.
+- Prefer `SharedFlow` for events, one-time actions, or multicasting to many listeners.
+
+## API Reference
+Exports:
+- `flow/index.dart`: `MutableFlow`, `StateFlow`, `SharedFlow`, `FlowObserver`
+- `components/components.dart`: `FlowBuilder`, `PulseStreamBuilder`
+
+Explore the code for more details or open the `example/` app to see it in action.
