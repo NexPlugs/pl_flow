@@ -4,21 +4,21 @@ import 'dart:math' show max;
 import 'flow.dart';
 
 /*
-  MutableStateFlow: always has a current value   
+  StateFlow: always has a current value   
   Example:
-  final flow = MutableStateFlow<int>(0);
+  final flow = StateFlow<int>(0);
   flow.value = 1;
   flow.stream.listen((event) {
     print(event); // 1
   });
 */
-class MutableStateFlow<T> extends MutableFlow<T> {
+class StateFlow<T> extends MutableFlow<T> {
   T _value;
   // Broadcast controller for live emission to listeners
   final StreamController<T> _controller = StreamController<T>.broadcast();
   // Subscription countable
 
-  MutableStateFlow(this._value);
+  StateFlow(this._value);
 
   T get value => _value;
 

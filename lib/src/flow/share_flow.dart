@@ -11,16 +11,16 @@ import 'flow.dart';
 enum BufferOverflow { dropOldest, dropLatest }
 
 /*
-  MutableSharedFlow: a shared flow that can be listened to by multiple subscribers
+  SharedFlow: a shared flow that can be listened to by multiple subscribers
   Example:
-  final flow = MutableSharedFlow<int>(replay: 0);
+  final flow = SharedFlow<int>(replay: 0);
   flow.emit(1); // replay 0
   flow.emit(2); // replay 0
   flow.stream.listen((event) {
     print(event); // 1, 2
   });
 */
-class MutableSharedFlow<T> extends MutableFlow<T> {
+class SharedFlow<T> extends MutableFlow<T> {
   // replay: number of last values to replay to new subscribers
   final int replay;
 
@@ -39,7 +39,7 @@ class MutableSharedFlow<T> extends MutableFlow<T> {
   // Broadcast controller for live emission to listeners
   final StreamController<T> _controller = StreamController<T>.broadcast();
 
-  MutableSharedFlow({
+  SharedFlow({
     this.replay = 0,
     this.extraBufferCapacity = 0,
     this.onBufferOverflow = BufferOverflow.dropOldest,
