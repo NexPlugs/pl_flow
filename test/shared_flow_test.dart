@@ -4,28 +4,34 @@ import 'package:pl_flow/pl_flow.dart';
 void main() {
   group('SharedFlow', () {
     test('replays the last N values to new subscribers', () async {
-      final flow = SharedFlow<String>(replay: 2);
+      final flow = SharedFlow<String>(replay: 3);
+      final received1 = <String>[];
+      final sub1 = flow.stream.listen(received1.add);
 
       await flow.emit('A');
       await flow.emit('B');
       await flow.emit('C');
 
-      final received1 = <String>[];
-      final sub1 = flow.stream.listen(received1.add);
       await Future<void>.microtask(() {});
-      expect(received1, ['B', 'C']);
+      expect(received1, ['A', 'B', 'C']);
+
+      received1.clear();
+      final sub2 = flow.stream.listen(received1.add);
 
       await flow.emit('D');
       await Future<void>.microtask(() {});
       expect(received1, ['B', 'C', 'D']);
 
-      final received2 = <String>[];
-      final sub2 = flow.stream.listen(received2.add);
+      received1.clear();
+      final received3 = <String>[];
+      final sub3 = flow.stream.listen(received3.add);
       await Future<void>.microtask(() {});
-      expect(received2, ['C', 'D']);
+      expect(received3, ['C', 'D']);
 
       await sub1.cancel();
       await sub2.cancel();
+
+      await sub3.cancel();
       await flow.dispose();
     });
 

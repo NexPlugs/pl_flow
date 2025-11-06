@@ -27,6 +27,6 @@ class FlowObserver {
     for (final flow in _flows) {
       flow.dispose();
     }
-    _flows.clear();
+    _flows.clear(); 
   }
 }
