@@ -9,11 +9,13 @@ environment:
   flutter: ">=3.0.0"
 
 dependencies:
+  async: ^2.13.0
   collection: ^1.19.1
   flutter:
     sdk: flutter
   plugin_platform_interface: ^2.0.2
   synchronized: ^3.4.0
+  tuple: ^2.0.2
 
 dev_dependencies:
   flutter_test:
