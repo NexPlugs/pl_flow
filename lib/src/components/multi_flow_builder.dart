@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:pl_flow/src/flow/flow.dart';
@@ -7,9 +9,9 @@ import 'package:tuple/tuple.dart';
 /// A builder that builds a widget based on the state of a MultiFlow.
 /// [data] the data of the MultiFlow.
 typedef MultiFlowBuilderWidget = Widget Function(
-    BuildContext context, List<Tuple3<Type, int, dynamic>> data);
+    BuildContext context, List<Tuple3<Type, int, dynamic>?> data);
 
-typedef MultiFlowData = List<Tuple3<Type, int, dynamic>>;
+typedef MultiFlowData = List<Tuple3<Type, int, dynamic>?>;
 
 // A builder that builds a widget based on the state of a MultiFlow.
 class MultiFlowBuidler extends StatefulWidget {
@@ -37,6 +39,8 @@ class _MultiFlowBuidlerState extends State<MultiFlowBuidler> {
 
   late List<Tuple3<Type, int, dynamic>?> _latestData;
 
+  // late StreamSubscription<MultiFlowData> _listenerSubscription;
+
   @override
   void initState() {
     super.initState();
@@ -47,29 +51,38 @@ class _MultiFlowBuidlerState extends State<MultiFlowBuidler> {
     _latestData = List.generate(_flows.length, (index) => null);
 
     if (widget.listener != null) {
-      _multiFlowStream.listen(widget.listener!);
+      // _listenerSubscription = _multiFlowStream.listen(widget.listener!);
     }
   }
 
-  // Merge all flows into a single stream
+  // Merge all flows into a single streamx
   Stream<MultiFlowData> _mergedStream() async* {
-    final merged =
-        StreamGroup.merge<MultiFlowData>(_flows.asMap().entries.map((entry) {
-      final index = entry.key;
-      final flow = entry.value;
-      return flow.stream.map((event) {
-        _latestData[index] = Tuple3(flow.runtimeType, index, event);
-        return _latestData.any((data) => data == null)
-            ? <Tuple3<Type, int, dynamic>>[]
-            : _latestData.where((data) => data != null).toList()
-                as MultiFlowData;
-      });
-    }));
+    try {
+      final merged =
+          StreamGroup.merge<MultiFlowData>(_flows.asMap().entries.map((entry) {
+        final index = entry.key;
+        final flow = entry.value;
 
-    if (_latestData.any((data) => data == null)) {
-      yield [];
-    } else {
+        debugPrint('Flow: ${flow.runtimeType} $index ');
+
+        return flow.stream.map((event) {
+          _latestData[index] = Tuple3(event.runtimeType, index, event);
+          return _latestData;
+        });
+      }));
+
+      // if (_latestData.any((data) => data == null)) {
+      //   debugPrint('No data with ${_latestData.length}');
+      //   yield [];
+      // } else {
+      //   debugPrint('Data: $_latestData');
+      //   yield* merged;
+      // }
       yield* merged;
+    } catch (e) {
+      debugPrint('Error in _mergedStream: $e');
+
+      yield [];
     }
   }
 
@@ -89,6 +102,8 @@ class _MultiFlowBuidlerState extends State<MultiFlowBuidler> {
       stream: _multiFlowStream,
       builder: (context, snapshot) {
         if (snapshot.hasData && snapshot.data != null) {
+          widget.listener?.call(snapshot.data!);
+
           return widget.builder(context, snapshot.data!);
         }
         return const SizedBox.shrink();
