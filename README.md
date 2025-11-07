@@ -5,6 +5,7 @@ Lightweight, Flutter-friendly reactive flows for state and event streams.
 - **StateFlow<T>**: holds a current value and emits updates to listeners
 - **SharedFlow<T>**: multicast/event stream with replay and buffer control
 - **FlowBuilder**: tiny widget to build UI from a `MutableFlow`
+- **MultiFlowBuidler**: listen to multiple flows and build from their combined data
 - **PulseStreamBuilder**: ergonomic, typed alternative to `StreamBuilder`
 - **FlowObserver**: track and dispose flows to avoid leaks
 
@@ -139,6 +140,51 @@ FlowBuilder.value<int>(
 )
 ```
 
+### MultiFlowBuidler 🔗
+Combine several `MutableFlow`s and rebuild when any of them change.
+
+```dart
+class DashboardCard extends StatelessWidget {
+  const DashboardCard({super.key, required this.counter, required this.messages});
+
+  final StateFlow<int> counter;
+  final SharedFlow<String> messages;
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiFlowBuidler(
+      flows: [counter, messages],
+      listener: (data) {
+        debugPrint('Flows updated: $data');
+      },
+      builder: (context, data) {
+        if (data.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final counterEntry = data.firstWhere((tuple) => tuple?.item2 == 0);
+        final messageEntry = data.firstWhere((tuple) => tuple?.item2 == 1);
+
+        final count = counterEntry?.item3 as int? ?? 0;
+        final lastMessage = messageEntry?.item3 as String? ?? '—';
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Count: $count'),
+            Text('Message: $lastMessage'),
+          ],
+        );
+      },
+    );
+  }
+}
+```
+
+- `flows` must be a non-empty list of `MutableFlow` instances (instances are **not** disposed by the widget).
+- `builder` receives a list of tuples containing the flow type, its position in the list, and the latest value. Entries remain `null` until each flow emits at least once.
+- `listener` is optional and triggers every time a non-empty payload is emitted.
+
 ### PulseStreamBuilder 📡
 Typed, ergonomic builder for any `Stream<T>`.
 
@@ -247,5 +293,6 @@ class ActivityBanner extends StatelessWidget {
 Exports:
 - `flow/index.dart`: `MutableFlow`, `StateFlow`, `SharedFlow`, `FlowObserver`
 - `components/components.dart`: `FlowBuilder`, `PulseStreamBuilder`
+- `components/multi_flow_builder.dart`: `MultiFlowBuidler`
 
 Explore the code for more details or open the `example/` app to see it in action.
