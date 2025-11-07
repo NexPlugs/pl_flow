@@ -1,5 +1,8 @@
 # pl_flow ⚡️
 
+https://github.com/user-attachments/assets/f3ad3968-ba94-4d8b-bab9-b6c4cad0a7cb
+
+
 Lightweight, Flutter-friendly reactive flows for state and event streams.
 
 - **StateFlow<T>**: holds a current value and emits updates to listeners
