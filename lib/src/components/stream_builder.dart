@@ -66,8 +66,7 @@ class PulseStreamBuilder<T extends Object> extends StatefulWidget {
     BuildContext context,
     Object error,
     StackTrace? stackTrace,
-  )?
-  errorBuilder;
+  )? errorBuilder;
 
   /// Callback to determine if widget should rebuild on new data.
   /// Return true to rebuild, false to skip.
@@ -130,9 +129,10 @@ class _PulseStreamBuilderState<T extends Object>
 
   void _handleData(T newValue) {
     // Check if we should rebuild
-    if (_state case StreamData(
-      :final value,
-    ) when widget.shouldRebuild != null) {
+    if (_state
+        case StreamData(
+          :final value,
+        ) when widget.shouldRebuild != null) {
       if (!widget.shouldRebuild!(value, newValue)) {
         return;
       }
