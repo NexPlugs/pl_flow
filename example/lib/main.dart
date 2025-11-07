@@ -118,6 +118,23 @@ class _FlowDemoPageState extends State<FlowDemoPage> {
             Row(
               children: [
                 ElevatedButton(
+                  onPressed: () {
+                    _counterFlow.value++;
+                  },
+                  child: const Text('Increase flow 1'),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton(
+                  onPressed: () {
+                    _messageFlow.emit('Hello from flow 2');
+                  },
+                  child: const Text('Increase flow 2'),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                ElevatedButton(
                   onPressed: _increment,
                   child: const Text('Increment'),
                 ),
@@ -125,6 +142,7 @@ class _FlowDemoPageState extends State<FlowDemoPage> {
                 OutlinedButton(onPressed: _reset, child: const Text('Reset')),
               ],
             ),
+            const SizedBox(height: 32),
           ],
         ),
       ),

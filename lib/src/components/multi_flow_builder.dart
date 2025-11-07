@@ -33,13 +33,14 @@ class MultiFlowBuidler extends StatefulWidget {
 }
 
 class _MultiFlowBuidlerState extends State<MultiFlowBuidler> {
+  // The flows to merge.
   late List<MutableFlow<dynamic>> _flows;
 
+  // The stream of MultiFlowData.
   late Stream<MultiFlowData> _multiFlowStream;
 
+  // The latest data of the flows.
   late List<Tuple3<Type, int, dynamic>?> _latestData;
-
-  // late StreamSubscription<MultiFlowData> _listenerSubscription;
 
   @override
   void initState() {
@@ -55,7 +56,7 @@ class _MultiFlowBuidlerState extends State<MultiFlowBuidler> {
     }
   }
 
-  // Merge all flows into a single streamx
+  /// Merge all flows into a single stream and return a stream of MultiFlowData.
   Stream<MultiFlowData> _mergedStream() async* {
     try {
       final merged =
@@ -71,13 +72,6 @@ class _MultiFlowBuidlerState extends State<MultiFlowBuidler> {
         });
       }));
 
-      // if (_latestData.any((data) => data == null)) {
-      //   debugPrint('No data with ${_latestData.length}');
-      //   yield [];
-      // } else {
-      //   debugPrint('Data: $_latestData');
-      //   yield* merged;
-      // }
       yield* merged;
     } catch (e) {
       debugPrint('Error in _mergedStream: $e');
