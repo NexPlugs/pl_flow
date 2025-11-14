@@ -30,7 +30,7 @@ class StateFlow<T> extends MutableFlow<T> {
 
   @override
   Stream<T> get stream async* {
-    debugLog("Listner add. count: ${subscriptionCount.value}");
+    debugLog("Listner add. count: $subscriptionCount");
     // new subscriber receives current value first
     final controller = StreamController<T>();
     controller.add(_value);
@@ -43,7 +43,7 @@ class StateFlow<T> extends MutableFlow<T> {
     );
 
     // update subscriptionCount
-    subscriptionCount.value = subscriptionCount.value + 1;
+    subscriptionCount = subscriptionCount + 1;
 
     controller.onCancel = () async {
       await _onCancelController(sub);
@@ -77,7 +77,7 @@ class StateFlow<T> extends MutableFlow<T> {
     debugLog("dispose");
     if (_controller.isClosed) return;
     _controller.onListen = null;
-    subscriptionCount.value = 0;
+    subscriptionCount = 0;
     await _controller.close();
     super.dispose();
   }
@@ -85,8 +85,8 @@ class StateFlow<T> extends MutableFlow<T> {
   /// [_onCancelController] this function used for cancel the controller and update the subscription count
   Future<void> _onCancelController(StreamSubscription<T> subscription) async {
     await subscription.cancel();
-    subscriptionCount.value = max(0, subscriptionCount.value - 1);
-    if (subscriptionCount.value == 0) {
+    subscriptionCount = max(0, subscriptionCount - 1);
+    if (subscriptionCount == 0) {
       await dispose();
     }
   }

@@ -43,14 +43,14 @@ class SharedFlow<T> extends MutableFlow<T> {
     this.replay = 0,
     this.extraBufferCapacity = 0,
     this.onBufferOverflow = BufferOverflow.dropOldest,
-  }) : assert(replay >= 0, 'replay must be greater than or equal to 0'),
-       assert(
-         extraBufferCapacity >= 0,
-         'extraBufferCapacity must be greater than or equal to 0',
-       ) {
+  })  : assert(replay >= 0, 'replay must be greater than or equal to 0'),
+        assert(
+          extraBufferCapacity >= 0,
+          'extraBufferCapacity must be greater than or equal to 0',
+        ) {
     // monitor subscription changes to update subscriptionCount
     _controller.onListen = () {
-      subscriptionCount.value = subscriptionCount.value + 1;
+      subscriptionCount = subscriptionCount + 1;
     };
 
     // no-op: we adjust count in subscribe() / unsubscribe() helpers instead
@@ -61,7 +61,7 @@ class SharedFlow<T> extends MutableFlow<T> {
   /// When start listening, subscribers will receive the replay cache items in order.
   @override
   Stream<T> get stream async* {
-    debugLog("Listner add. count: ${subscriptionCount.value}");
+    debugLog("Listner add. count: $subscriptionCount");
 
     // Create an individual controller per subscriber that forwards events from broadcast controller
     final controller = StreamController<T>();
@@ -80,7 +80,7 @@ class SharedFlow<T> extends MutableFlow<T> {
     );
 
     // Track subscription count (increment)
-    subscriptionCount.value = subscriptionCount.value + 1;
+    subscriptionCount = subscriptionCount + 1;
 
     // Cleanup when controller is canceled
     controller.onCancel = () async {
@@ -100,7 +100,7 @@ class SharedFlow<T> extends MutableFlow<T> {
     final capacity = replay + extraBufferCapacity;
 
     ///[hasListeners] this value used for check the there are any listeners or not
-    final hasListeners = subscriptionCount.value > 0 || _controller.hasListener;
+    final hasListeners = subscriptionCount > 0 || _controller.hasListener;
 
     if (!hasListeners) {
       if (replay == 0) return true;
@@ -195,7 +195,7 @@ class SharedFlow<T> extends MutableFlow<T> {
     _replayCache.clear();
     _queue.clear();
 
-    subscriptionCount.value = 0;
+    subscriptionCount = 0;
     _controller.onListen = null;
     super.dispose();
   }
@@ -203,8 +203,8 @@ class SharedFlow<T> extends MutableFlow<T> {
   /// [_onCancelController] this function used for cancel the controller and update the subscription count
   Future<void> _onCancelController(StreamSubscription<T> subscription) async {
     await subscription.cancel();
-    subscriptionCount.value = max(0, subscriptionCount.value - 1);
-    if (subscriptionCount.value == 0) {
+    subscriptionCount = max(0, subscriptionCount - 1);
+    if (subscriptionCount == 0) {
       await dispose();
     }
   }

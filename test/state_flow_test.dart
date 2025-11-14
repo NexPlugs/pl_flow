@@ -41,6 +41,8 @@ void main() {
 
       await sub.cancel();
       await flow.dispose();
+
+      expect(flow.subscriptionCount, 0);
     });
   });
 }

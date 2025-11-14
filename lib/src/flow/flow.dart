@@ -15,7 +15,7 @@ abstract class MutableFlow<T> {
   MutableFlow({this.debugLabel = "", this.enableLogging = false});
 
   // Subscription countable
-  final ValueNotifier<int> subscriptionCount = ValueNotifier<int>(0);
+  var subscriptionCount = 0;
 
   /// Try emit without dropping (returns true if accepted; false if dropped due to full buffer)
   bool tryEmit(T value);
@@ -26,7 +26,7 @@ abstract class MutableFlow<T> {
   /// Dispose controller when no longer needed
   @mustCallSuper
   Future<void> dispose() async {
-    subscriptionCount.dispose();
+    subscriptionCount = 0;
   }
 
   /// Get the stream of the flow
