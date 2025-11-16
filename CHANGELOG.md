@@ -1,3 +1,6 @@
+# 1.1.2
+- Fix `MultiFlowBuilder` dispose bug
+
 ## 1.1.0
 - Adds `MultiFlowBuilder` 
 
