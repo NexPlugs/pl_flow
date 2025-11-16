@@ -85,7 +85,9 @@ class _MultiFlowBuidlerState extends State<MultiFlowBuidler> {
     for (final flow in _flows) {
       flow.dispose();
     }
-    _multiFlowStream.drain();
+    // Break references so GC can reclaim memory
+    _latestData = [];
+    _flows = [];
 
     super.dispose();
   }
